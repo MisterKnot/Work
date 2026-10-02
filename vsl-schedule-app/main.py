@@ -34,23 +34,38 @@ class VesselScheduleApp:
             hint_text="Search vessel or service...",
             on_change=self.on_search, prefix_icon=ft.Icons.SEARCH, dense=True
         )
+        self.table_areas = {
+            shift: ft.Column(spacing=0, scroll=ft.ScrollMode.AUTO, expand=True)
+            for shift in SHIFT_ORDER
+        }
         self.tabs = ft.Tabs(
             selected_index=0,
             on_change=self.on_tab_change,
-            tabs=[
-                ft.Tab(text=shift, icon=SHIFT_ICONS[shift])
-                for shift in SHIFT_ORDER
-            ],
+            length=len(SHIFT_ORDER),
+            content=ft.Column(
+                expand=True,
+                controls=[
+                    ft.TabBar(
+                        tabs=[
+                            ft.Tab(label=shift, icon=SHIFT_ICONS[shift])
+                            for shift in SHIFT_ORDER
+                        ]
+                    ),
+                    ft.TabBarView(
+                        expand=True,
+                        controls=[self.table_areas[shift] for shift in SHIFT_ORDER],
+                    ),
+                ],
+            ),
         )
-        self.table_area = ft.Column(spacing=0)
         self.add_button = ft.FloatingActionButton(
-            icon=ft.Icons.ADD, text="Add Vessel", on_click=self.on_add
+            icon=ft.Icons.ADD, content=ft.Text("Add Vessel"), on_click=self.on_add
         )
         self.page.add(
             ft.Container(
                 content=ft.Column(
-                    [self.search_field, self.tabs, self.table_area],
-                    spacing=10, scroll=ft.ScrollMode.AUTO, expand=True,
+                    [self.search_field, self.tabs],
+                    spacing=10, expand=True,
                 ),
                 padding=20, expand=True,
             ),
@@ -69,13 +84,18 @@ class VesselScheduleApp:
         self.refresh_table()
 
     def refresh_table(self):
-        entries = [
-            x for x in list_entries(self.conn, self.current_shift())
-            if not self.filter_text
-            or self.filter_text in x.vessel.upper()
-            or (x.service or "").upper().startswith(self.filter_text)
-        ]
-        table = ft.DataTable(
+        for shift, area in self.table_areas.items():
+            entries = [
+                x for x in list_entries(self.conn, shift)
+                if not self.filter_text
+                or self.filter_text in x.vessel.upper()
+                or (x.service or "").upper().startswith(self.filter_text)
+            ]
+            area.controls = [self.build_table(entries)]
+        self.page.update()
+
+    def build_table(self, entries):
+        return ft.DataTable(
             columns=[
                 ft.DataColumn(ft.Text("QC")), ft.DataColumn(ft.Text("Vessel")),
                 ft.DataColumn(ft.Text("Service")), ft.DataColumn(ft.Text("Owner")),
@@ -84,13 +104,11 @@ class VesselScheduleApp:
                 ft.DataColumn(ft.Text("Arrival Road")),
                 ft.DataColumn(ft.Text("Working Start")),
                 ft.DataColumn(ft.Text("ETS")),
-                ft.DataColumn(ft.Text(""), on_click=None),
+                ft.DataColumn(ft.Text("")),
             ],
             rows=[self.entry_row(x) for x in entries],
             heading_row_height=40, data_row_min_height=40,
         )
-        self.table_area.controls = [table]
-        self.page.update()
 
     def entry_row(self, entry: ScheduleEntry):
         return ft.DataRow(
