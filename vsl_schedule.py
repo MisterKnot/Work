@@ -135,7 +135,7 @@ def main(page: ft.Page):
     def migration_cell(idx):
         row = rows[idx]
         if row["mid"] is None:
-            return ft.Container(ft.Text("—", italic=True, color=ft.Colors.GREY_400), width=120)
+            return ft.Container(ft.Text("", italic=True, color=ft.Colors.GREY_400), width=120)
         runs = migration_runs()
         run = next((a, b) for a, b in runs if a <= idx <= b)
         a, b = run
@@ -211,12 +211,15 @@ def main(page: ft.Page):
     table = ft.DataTable(
         columns=[
             ft.DataColumn(ft.Text("Sel. / Move", size=12)),
-            *[ft.DataColumn(ft.Text(c, size=12)) for c in COLUMNS],
+            *[ft.DataColumn(
+                ft.Text("" if c == "Migrations" else c, size=12)
+            ) for c in COLUMNS],
         ],
         rows=[],
         heading_row_height=48,
-        vertical_lines=ft.BorderSide(color=ft.Colors.GREY_300),
-        horizontal_lines=ft.BorderSide(color=ft.Colors.GREY_300),
+        border=ft.Border(),
+        horizontal_lines=ft.BorderSide.none,
+        vertical_lines=ft.BorderSide.none,
     )
 
     count_text = ft.Text()
