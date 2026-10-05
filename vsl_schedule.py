@@ -25,13 +25,99 @@ def main(page: ft.Page):
     migration_counter = {"n": 0}
 
     def blank_row():
-        return {
-            "selected": False,
-            "migration": "",
-            "fields": {c: "" for c in EDITABLE_COLUMNS},
-        }
+        return {"selected": False, "mid": None, "fields": {c: "" for c in EDITABLE_COLUMNS}}
 
     rows = [blank_row()]
+
+    # ---- migration bookkeeping -------------------------------------------
+
+    def normalize():
+        for r in rows:
+            r["selected"] = False
+        for i, r in enumerate(rows):
+            if r["mid"] is not None:
+                if i == 0 or rows[i - 1]["mid"] != r["mid"]:
+                    j = i
+                    while j + 1 < len(rows) and rows[j + 1]["mid"] == r["mid"]:
+                        j += 1
+                    if j == i:
+                        r["mid"] = None
+        labels = {}
+        for r in rows:
+            if r["mid"] is not None and r["mid"] not in labels:
+                labels[r["mid"]] = f"M{len(labels) + 1}"
+
+    def migration_runs():
+        runs = []
+        i = 0
+        while i < len(rows):
+            if rows[i]["mid"] is None:
+                i += 1
+                continue
+            j = i
+            while j + 1 < len(rows) and rows[j + 1]["mid"] == rows[i]["mid"]:
+                j += 1
+            runs.append((i, j))
+            i = j + 1
+        return runs
+
+    # ---- actions ----------------------------------------------------------
+
+    def add_row(e=None):
+        rows.append(blank_row())
+        rebuild()
+
+    def delete_row(idx):
+        rows.pop(idx)
+        normalize()
+        rebuild()
+
+    def move_row(idx, step):
+        row = rows[idx]
+        if row["mid"] is None:
+            k = idx + step
+            while 0 <= k < len(rows) and rows[k]["mid"] is not None:
+                k += step
+            if not 0 <= k < len(rows):
+                return
+            rows[idx], rows[k] = rows[k], rows[idx]
+        else:
+            j = idx + step
+            if not 0 <= j < len(rows):
+                return
+            other = rows[j]
+            rows[idx], rows[j] = rows[j], rows[idx]
+            if other["mid"] != row["mid"]:
+                row["mid"] = None
+        normalize()
+        rebuild()
+
+    def combine_selected(e=None):
+        selected = [i for i, r in enumerate(rows) if r["selected"]]
+        if len(selected) < 2:
+            snack.content = ft.Text("Select at least two rows to combine a migration.")
+            page.open(snack)
+            return
+        migration_counter["n"] += 1
+        mid = migration_counter["n"]
+        group = [rows[i] for i in selected]
+        insert_at = selected[0]
+        for i in reversed(selected):
+            rows.pop(i)
+        for offset, r in enumerate(group):
+            r["mid"] = mid
+            r["selected"] = False
+            rows.insert(insert_at + offset, r)
+        normalize()
+        rebuild()
+
+    def clear_selected(e=None):
+        for r in rows:
+            r["mid"] = None
+        normalize()
+        rebuild()
+
+    # ---- table ------------------------------------------------------------
 
     def make_cell(row, col):
         def on_change(e, row=row, col=col):
@@ -46,84 +132,87 @@ def main(page: ft.Page):
             width=140 if col in ("Arrival at Piraeus Road", "Working start time", "ETS") else 110,
         )
 
+    def migration_cell(idx):
+        row = rows[idx]
+        if row["mid"] is None:
+            return ft.Container(ft.Text("—", italic=True, color=ft.Colors.GREY_400), width=120)
+        runs = migration_runs()
+        run = next((a, b) for a, b in runs if a <= idx <= b)
+        a, b = run
+        seq = [rows[k]["fields"]["QC"] or "?" for k in range(a, b + 1)]
+        label = f"M{[r for r in runs].index(run) + 1}"
+        qc = row["fields"]["QC"] or "?"
+        arrow = "  ↓" if idx < b else ""
+        piece = ("╭─[ " if idx == a else "│  ") if idx < b else "╰─] "
+        return ft.Container(
+            ft.Text(
+                f"{piece}{qc}{arrow}",
+                color=ft.Colors.RED_400,
+                weight=ft.FontWeight.BOLD,
+                size=13,
+            ),
+            width=120,
+            tooltip=f"{label}: " + " → ".join(seq),
+        )
+
     def rebuild():
         table.rows.clear()
+        runs = migration_runs()
         for idx, row in enumerate(rows):
+            controls = [
+                ft.IconButton(
+                    icon=ft.Icons.ARROW_DROP_UP,
+                    icon_size=16,
+                    tooltip="Move up",
+                    on_click=lambda e, idx=idx: move_row(idx, -1),
+                ),
+                ft.IconButton(
+                    icon=ft.Icons.ARROW_DROP_DOWN,
+                    icon_size=16,
+                    tooltip="Move down",
+                    on_click=lambda e, idx=idx: move_row(idx, 1),
+                ),
+            ]
             cells = [
                 ft.DataCell(
-                    ft.Row(
+                    ft.Column(
                         [
-                            ft.Checkbox(
-                                value=row["selected"],
-                                on_change=lambda e, row=row: row.__setitem__(
-                                    "selected", e.control.value
-                                ),
+                            ft.Row(
+                                [
+                                    ft.Checkbox(
+                                        value=row["selected"],
+                                        on_change=lambda e, row=row: row.__setitem__(
+                                            "selected", e.control.value
+                                        ),
+                                    ),
+                                    ft.IconButton(
+                                        icon=ft.Icons.DELETE_OUTLINE,
+                                        icon_size=16,
+                                        tooltip="Delete row",
+                                        on_click=lambda e, idx=idx: delete_row(idx),
+                                    ),
+                                ],
+                                spacing=0,
                             ),
-                            ft.IconButton(
-                                icon=ft.Icons.DELETE_OUTLINE,
-                                icon_size=16,
-                                tooltip="Delete row",
-                                on_click=lambda e, idx=idx: delete_row(idx),
-                            ),
+                            ft.Row(controls, spacing=0),
                         ],
                         spacing=0,
+                        tight=True,
                     )
                 )
             ]
             for col in COLUMNS:
                 if col == "Migrations":
-                    cells.append(
-                        ft.DataCell(
-                            ft.Container(
-                                ft.Text(
-                                    row["migration"] or "—",
-                                    italic=not bool(row["migration"]),
-                                    color=ft.Colors.RED_400 if row["migration"] else None,
-                                    weight=ft.FontWeight.BOLD if row["migration"] else None,
-                                ),
-                                width=130,
-                            )
-                        )
-                    )
+                    cells.append(ft.DataCell(migration_cell(idx)))
                 else:
                     cells.append(ft.DataCell(make_cell(row, col)))
             table.rows.append(ft.DataRow(cells=cells))
-        count_text.value = f"{len(rows)} rows · {migration_counter['n']} migrations"
+        count_text.value = f"{len(rows)} rows · {len(runs)} migrations"
         page.update()
-
-    def add_row(e=None):
-        rows.append(blank_row())
-        rebuild()
-
-    def delete_row(idx):
-        rows.pop(idx)
-        rebuild()
-
-    def combine_selected(e=None):
-        selected = [i for i, r in enumerate(rows) if r["selected"]]
-        if len(selected) < 2:
-            snack.content = ft.Text("Select at least two rows to combine a migration.")
-            page.open(snack)
-            return
-        migration_counter["n"] += 1
-        tag = f"[M{migration_counter['n']}: " + " + ".join(
-            f"{rows[i]['fields']['QC'] or '?'}↔{rows[i]['fields']['Vessel'] or '?'}"
-            for i in selected
-        ) + "]"
-        for i in selected:
-            rows[i]["migration"] = tag
-            rows[i]["selected"] = False
-        rebuild()
-
-    def clear_selected(e=None):
-        for r in rows:
-            r["selected"] = False
-            r["migration"] = ""
-        rebuild()
 
     table = ft.DataTable(
         columns=[
-            ft.DataColumn(ft.Text("Sel.", size=12)),
+            ft.DataColumn(ft.Text("Sel. / Move", size=12)),
             *[ft.DataColumn(ft.Text(c, size=12)) for c in COLUMNS],
         ],
         rows=[],
