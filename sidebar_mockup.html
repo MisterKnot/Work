@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shift Order — Sidebar Mockup</title>
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --surface: #ffffff;
+    --primary: #0d47a1;
+    --primary-light: #e3ecfd;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #e0e4ea;
+    --ok: #2e7d32;
+    --warn: #c62828;
+    --drawer-w: 280px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 56px;
+    padding: 0 16px;
+    background: var(--primary);
+    color: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+  .hamburger {
+    background: none; border: none; color: #fff;
+    font-size: 22px; cursor: pointer; padding: 6px 10px;
+    border-radius: 6px;
+  }
+  .hamburger:hover { background: rgba(255,255,255,.15); }
+  .topbar h1 { font-size: 18px; font-weight: 600; flex: 1; }
+  .shift-badge {
+    background: rgba(255,255,255,.18);
+    padding: 4px 12px; border-radius: 999px; font-size: 13px;
+  }
+
+  /* ---------- Drawer ---------- */
+  .scrim {
+    position: fixed; inset: 0; background: rgba(0,0,0,.4);
+    opacity: 0; pointer-events: none; transition: opacity .25s;
+    z-index: 50;
+  }
+  .drawer {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: var(--drawer-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    transform: translateX(-100%);
+    transition: transform .25s ease, margin-left .25s ease;
+    z-index: 60;
+    display: flex; flex-direction: column;
+  }
+  .drawer.open { transform: translateX(0); }
+  body.pinned .drawer {
+    position: sticky;
+    transform: none;
+    height: 100vh;
+    z-index: 10;
+  }
+  .app-body { display: flex; align-items: flex-start; }
+  .drawer-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .drawer-head .title { font-weight: 700; font-size: 15px; color: var(--primary); }
+  .drawer-head .pin {
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    width: 32px; height: 32px; cursor: pointer; font-size: 15px;
+    color: var(--muted);
+  }
+  .drawer-head .pin.active { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+  .drawer-nav { padding: 8px; overflow-y: auto; flex: 1; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: 8px; cursor: pointer;
+    font-size: 14px; color: var(--text);
+    margin-bottom: 2px;
+  }
+  .nav-item:hover { background: #eef1f5; }
+  .nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .nav-item .icon { width: 20px; text-align: center; }
+  .drawer-foot {
+    padding: 12px 16px; border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--muted);
+  }
+
+  /* ---------- Main content ---------- */
+  .main { flex: 1; padding: 20px 24px; min-width: 0; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 18px; margin-bottom: 16px;
+  }
+  .card h2 {
+    font-size: 15px; font-weight: 700; color: var(--primary);
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .sum-chip { font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 999px; }
+  .sum-chip.ok { background: #e6f4e6; color: var(--ok); }
+  .sum-chip.bad { background: #fdecea; color: var(--warn); }
+
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 8px 10px; text-align: left; font-size: 14px; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+  tbody tr { border-top: 1px solid var(--border); }
+  td input[type=number] {
+    width: 80px; padding: 6px 8px; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 14px;
+  }
+  td input[type=text], textarea {
+    width: 100%; padding: 6px 8px; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 14px; font-family: inherit;
+  }
+  textarea { min-height: 72px; resize: vertical; }
+  .op-name { font-weight: 600; white-space: nowrap; }
+
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+  /* pin snackbar */
+  .snack {
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: #263238; color: #fff; font-size: 13px;
+    padding: 9px 16px; border-radius: 8px; transition: transform .25s; z-index: 80;
+  }
+  .snack.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="hamburger" id="hamburger" title="Menu">&#9776;</button>
+  <h1>Terminal Shift Order</h1>
+  <span class="shift-badge">Shift: A &nbsp;|&nbsp; 2026-02-10</span>
+</div>
+
+<div class="app-body">
+
+  <!-- ================= DRAWER ================= -->
+  <aside class="drawer" id="drawer">
+    <div class="drawer-head">
+      <span class="title">Navigation</span>
+      <button class="pin" id="pinBtn" title="Pin drawer open">&#128204;</button>
+    </div>
+    <nav class="drawer-nav">
+      <div class="nav-item active" data-section="shift-order"><span class="icon">&#128221;</span> Shift Order</div>
+      <div class="nav-item" data-section="history"><span class="icon">&#128218;</span> Past Shift Orders</div>
+      <div class="nav-item" data-section="operators"><span class="icon">&#128101;</span> Operators &amp; Fleet</div>
+      <div class="nav-item" data-section="export"><span class="icon">&#128228;</span> Export / Print</div>
+      <div class="nav-item" data-section="settings"><span class="icon">&#9881;</span> Settings</div>
+    </nav>
+    <div class="drawer-foot">Pinned drawer stays open; unpinned closes on outside click.</div>
+  </aside>
+
+  <div class="scrim" id="scrim"></div>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main">
+    <div id="section-shift-order">
+
+      <div class="card">
+        <h2>Quay Cranes (QC) <span class="sum-chip" data-total="21" data-required="3"></span></h2>
+        <table>
+          <thead><tr><th style="width:140px">Operator</th><th style="width:110px">Count</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td class="op-name">PCT</td><td><input type="number" min="0" value="1" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+            <tr><td class="op-name">Dport</td><td><input type="number" min="0" value="20" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+            <tr><td class="op-name">Extra Eng.</td><td><input type="number" min="0" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+            <tr><td class="op-name">PPA</td><td><input type="number" min="0" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+          </tbody>
+        </table>
+        <div class="hint">Required this shift: 3 &nbsp;&middot;&nbsp; Fleet total: 21</div>
+      </div>
+
+      <div class="card">
+        <h2>Rail-Mounted Gantry (RMG) <span class="sum-chip" data-total="22"></span></h2>
+        <table>
+          <thead><tr><th style="width:140px">Operator</th><th style="width:110px">Count</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td class="op-name">PCT</td><td><input type="number" min="0" value="5" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+            <tr><td class="op-name">Dport</td><td><input type="number" min="0" value="17" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+            <tr><td class="op-name">PPA</td><td><input type="number" min="0" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+          </tbody>
+        </table>
+        <div class="hint">Fleet total: 22</div>
+      </div>
+
+      <div class="card">
+        <h2>Rubber-Tyred Gantry (RTG) <span class="sum-chip" data-total="44"></span></h2>
+        <table>
+          <thead><tr><th style="width:140px">Operator</th><th style="width:110px">Count</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td class="op-name">PCT</td><td><input type="number" min="0" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+            <tr><td class="op-name">Dport</td><td><input type="number" min="0" value="44" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+            <tr><td class="op-name">PPA</td><td><input type="number" min="0" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+          </tbody>
+        </table>
+        <div class="hint">Fleet total: 44</div>
+      </div>
+
+      <div class="card">
+        <h2>Stacking Cranes (SC) <span class="sum-chip" data-total="4"></span></h2>
+        <table>
+          <thead><tr><th style="width:140px">Operator</th><th style="width:110px">Count</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td class="op-name">PCT</td><td><input type="number" min="0" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+            <tr><td class="op-name">Dport</td><td><input type="number" min="0" value="4" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+            <tr><td class="op-name">PPA</td><td><input type="number" min="0" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+          </tbody>
+        </table>
+        <div class="hint">Fleet total: 4</div>
+      </div>
+
+      <div class="card">
+        <h2>Forklifts (F/L) <span class="sum-chip" data-total="13"></span></h2>
+        <table>
+          <thead><tr><th style="width:140px">Operator</th><th style="width:110px">Count</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td class="op-name">PCT</td><td><input type="number" min="0" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+            <tr><td class="op-name">Dport</td><td><input type="number" min="0" value="13" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+            <tr><td class="op-name">R/S</td><td><input type="number" min="0" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note... (R/S only appears in F/L)"></td></tr>
+            <tr><td class="op-name">PPA</td><td><input type="number" min="0" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+          </tbody>
+        </table>
+        <div class="hint">Fleet total: 13</div>
+      </div>
+
+      <div class="card">
+        <h2>Trucks <span class="sum-chip" data-total="160"></span></h2>
+        <table>
+          <thead><tr><th style="width:140px">Operator</th><th style="width:110px">Count</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td class="op-name">Dport</td><td><input type="number" min="0" value="160" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+            <tr><td class="op-name">Yard</td><td><input type="number" min="0" value="10" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+            <tr><td class="op-name">Bus</td><td><input type="number" min="0" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+            <tr><td class="op-name">PPA</td><td><input type="number" min="0" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+            <tr><td class="op-name">Private</td><td><input type="number" min="0" class="count"></td><td><input type="text" class="op-note" placeholder="Operator note..."></td></tr>
+          </tbody>
+        </table>
+        <div class="hint">Fleet total: 160</div>
+      </div>
+
+      <div class="card">
+        <h2>Workers <span class="sum-chip"></span></h2>
+        <table>
+          <thead><tr><th style="width:140px">Category</th><th style="width:110px">Count</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td class="op-name">Extra Checker</td><td><input type="number" min="0" value="1" class="count"></td><td><input type="text" class="op-note" placeholder="Note..."></td></tr>
+            <tr><td class="op-name">Windbreakers</td><td><input type="number" min="0" value="2" class="count"></td><td><input type="text" class="op-note" placeholder="Note..."></td></tr>
+            <tr><td class="op-name">Lashing Belts</td><td><input type="number" min="0" value="3" class="count"></td><td><input type="text" class="op-note" placeholder="Note..."></td></tr>
+            <tr><td class="op-name">Cherry Picker</td><td><input type="number" min="0" value="1" class="count"></td><td><input type="text" class="op-note" placeholder="Note..."></td></tr>
+            <tr><td class="op-name">Clark</td><td><input type="number" min="0" value="1" class="count"></td><td><input type="text" class="op-note" placeholder="Note..."></td></tr>
+            <tr><td class="op-name">Extra Workers</td><td><input type="number" min="0" value="2" class="count"></td><td><input type="text" class="op-note" placeholder="Note..."></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>QC Maintenance</h2>
+        <textarea placeholder="Free text: maintenance activities this shift..."></textarea>
+      </div>
+
+      <div class="card">
+        <h2>QC / RMG (Breakdown) OFF</h2>
+        <textarea placeholder="Free text: cranes out of service, breakdowns..."></textarea>
+      </div>
+
+      <div class="card">
+        <h2>Shift Notes</h2>
+        <textarea placeholder="Free text: general shift notes..."></textarea>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<div class="snack" id="snack"></div>
+
+<script>
+  const drawer = document.getElementById('drawer');
+  const scrim  = document.getElementById('scrim');
+  const pinBtn = document.getElementById('pinBtn');
+  const snack  = document.getElementById('snack');
+  const burger = document.getElementById('hamburger');
+  let pinned = false;
+
+  function openDrawer()  { drawer.classList.add('open'); scrim.style.opacity = 1; scrim.style.pointerEvents = 'auto'; }
+  function closeDrawer() { if (!pinned) { drawer.classList.remove('open'); scrim.style.opacity = 0; scrim.style.pointerEvents = 'none'; } }
+
+  burger.onclick = openDrawer;
+  scrim.onclick  = closeDrawer;
+
+  pinBtn.onclick = () => {
+    pinned = !pinned;
+    pinBtn.classList.toggle('active', pinned);
+    document.body.classList.toggle('pinned', pinned);
+    if (pinned) { scrim.style.opacity = 0; scrim.style.pointerEvents = 'none'; }
+    else closeDrawer();
+    snack.textContent = pinned ? 'Drawer pinned — stays open' : 'Drawer unpinned — closes on outside click';
+    snack.classList.add('show');
+    setTimeout(() => snack.classList.remove('show'), 2200);
+  };
+
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.onclick = () => {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      if (!pinned) closeDrawer();
+      if (item.dataset.section !== 'shift-order') {
+        snack.textContent = '"' + item.textContent.trim() + '" — placeholder section in this mockup';
+        snack.classList.add('show');
+        setTimeout(() => snack.classList.remove('show'), 2200);
+      }
+    };
+  });
+
+  // Sum validation: chip = sum of counts, green if <= fleet total (and >= required when present)
+  function updateChips() {
+    document.querySelectorAll('.card').forEach(card => {
+      const chip = card.querySelector('.sum-chip');
+      if (!chip) return;
+      let sum = 0;
+      card.querySelectorAll('.count').forEach(inp => { sum += parseInt(inp.value || 0, 10); });
+      const total = parseInt(chip.dataset.total || '0', 10);
+      const req   = parseInt(chip.dataset.required || '0', 10);
+      let ok = true;
+      if (total) ok = sum <= total;
+      if (req)  ok = ok && sum >= req;
+      if (!total) { chip.textContent = 'Σ ' + sum; chip.className = 'sum-chip ok'; return; }
+      chip.textContent = 'Σ ' + sum + ' / ' + total;
+      chip.className = 'sum-chip ' + (ok ? 'ok' : 'bad');
+    });
+  }
+  document.querySelectorAll('.count').forEach(inp => inp.addEventListener('input', updateChips));
+  updateChips();
+</script>
+</body>
+</html>
