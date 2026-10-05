@@ -195,50 +195,46 @@ def main(page: ft.Page):
                 if isinstance(inner, ft.TextField):
                     inner.width = col_width(COLUMNS[ci - 1])
 
+    compact_btn = ft.ButtonStyle(
+        padding=0,
+        visual_density=ft.VisualDensity.COMPACT,
+    )
+
     def rebuild():
         table.rows.clear()
         runs = migration_runs()
         for idx, row in enumerate(rows):
             cells = [
                 ft.DataCell(
-                    ft.Column(
+                    ft.Row(
                         [
-                            ft.Row(
-                                [
-                                    ft.IconButton(
-                                        icon=ft.Icons.ARROW_DROP_UP,
-                                        icon_size=16,
-                                        tooltip="Move up",
-                                        on_click=lambda e, idx=idx: move_row(idx, -1),
-                                    ),
-                                    ft.IconButton(
-                                        icon=ft.Icons.ARROW_DROP_DOWN,
-                                        icon_size=16,
-                                        tooltip="Move down",
-                                        on_click=lambda e, idx=idx: move_row(idx, 1),
-                                    ),
-                                ],
-                                spacing=0,
-                                tight=True,
+                            ft.IconButton(
+                                icon=ft.Icons.ARROW_DROP_UP,
+                                icon_size=16,
+                                tooltip="Move up",
+                                style=compact_btn,
+                                on_click=lambda e, idx=idx: move_row(idx, -1),
                             ),
-                            ft.Row(
-                                [
-                                    ft.Checkbox(
-                                        value=row["selected"],
-                                        on_change=lambda e, row=row: row.__setitem__(
-                                            "selected", e.control.value
-                                        ),
-                                        scale=0.8,
-                                    ),
-                                    ft.IconButton(
-                                        icon=ft.Icons.DELETE_OUTLINE,
-                                        icon_size=16,
-                                        tooltip="Delete row",
-                                        on_click=lambda e, idx=idx: delete_row(idx),
-                                    ),
-                                ],
-                                spacing=0,
-                                tight=True,
+                            ft.IconButton(
+                                icon=ft.Icons.ARROW_DROP_DOWN,
+                                icon_size=16,
+                                tooltip="Move down",
+                                style=compact_btn,
+                                on_click=lambda e, idx=idx: move_row(idx, 1),
+                            ),
+                            ft.Checkbox(
+                                value=row["selected"],
+                                on_change=lambda e, row=row: row.__setitem__(
+                                    "selected", e.control.value
+                                ),
+                                scale=0.7,
+                            ),
+                            ft.IconButton(
+                                icon=ft.Icons.DELETE_OUTLINE,
+                                icon_size=16,
+                                tooltip="Delete row",
+                                style=compact_btn,
+                                on_click=lambda e, idx=idx: delete_row(idx),
                             ),
                         ],
                         spacing=0,
@@ -258,7 +254,7 @@ def main(page: ft.Page):
 
     table = ft.DataTable(
         columns=[
-            ft.DataColumn(ft.Text("Sel. / Move", size=12, width=60, max_lines=2)),
+            ft.DataColumn(ft.Text("Sel. / Move", size=12, width=100, max_lines=2)),
             *[
                 ft.DataColumn(
                     ft.Text(
