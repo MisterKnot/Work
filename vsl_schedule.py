@@ -217,9 +217,8 @@ def main(page: ft.Page):
         ],
         rows=[],
         heading_row_height=48,
-        border=ft.Border(),
-        horizontal_lines=ft.BorderSide.none,
-        vertical_lines=ft.BorderSide.none,
+        horizontal_lines=ft.BorderSide(width=0),
+        vertical_lines=ft.BorderSide(width=0),
     )
 
     count_text = ft.Text()
