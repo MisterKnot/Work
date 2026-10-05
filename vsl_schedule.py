@@ -41,7 +41,7 @@ def main(page: ft.Page):
             value=row["fields"][col],
             on_change=on_change,
             dense=True,
-            border=ft.InputBorder.UNDERLINE,
+            border=ft.UnderlineInputBorder(),
             content_padding=ft.Padding(left=6, right=6, top=4, bottom=4),
             width=140 if col in ("Arrival at Piraeus Road", "Working start time", "ETS") else 110,
         )
