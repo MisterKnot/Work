@@ -114,6 +114,25 @@ def main(page: ft.Page):
     def clear_selected(e=None):
         for r in rows:
             r["mid"] = None
+            r["del"] = False
+        normalize()
+        rebuild()
+
+    def set_migration_delete(run, value):
+        a, b = run
+        for k in range(a, b + 1):
+            rows[k]["del"] = value
+        rebuild()
+
+    def delete_checked_migrations(e=None):
+        global_del = any(r.get("del") for r in rows)
+        if not global_del:
+            snack.content = ft.Text("Check a migration's checkbox first.")
+            page.open(snack)
+            return
+        keep = [r for r in rows if not (r["mid"] is not None and r.get("del"))]
+        rows.clear()
+        rows.extend(keep)
         normalize()
         rebuild()
 
@@ -142,11 +161,25 @@ def main(page: ft.Page):
         label = f"M{[r for r in runs].index(run) + 1}"
         piece = ("]─╮ " if idx == a else "  │") if idx < b else "]─╯ "
         return ft.Container(
-            ft.Text(
-                f"{piece}",
-                color=ft.Colors.RED_400,
-                weight=ft.FontWeight.BOLD,
-                size=13,
+            ft.Row(
+                [
+                    ft.Checkbox(
+                        value=row.get("del", False),
+                        on_change=lambda e, row=row: (
+                            row.__setitem__("del", e.control.value),
+                            set_migration_delete(run, e.control.value),
+                        ),
+                        scale=0.7,
+                    ),
+                    ft.Text(
+                        f"{piece}",
+                        color=ft.Colors.RED_400,
+                        weight=ft.FontWeight.BOLD,
+                        size=13,
+                    ),
+                ],
+                spacing=0,
+                tight=True,
             ),
             tooltip=f"{label}: " + " → ".join(seq),
         )
@@ -155,24 +188,28 @@ def main(page: ft.Page):
         table.rows.clear()
         runs = migration_runs()
         for idx, row in enumerate(rows):
-            controls = [
-                ft.IconButton(
-                    icon=ft.Icons.ARROW_DROP_UP,
-                    icon_size=16,
-                    tooltip="Move up",
-                    on_click=lambda e, idx=idx: move_row(idx, -1),
-                ),
-                ft.IconButton(
-                    icon=ft.Icons.ARROW_DROP_DOWN,
-                    icon_size=16,
-                    tooltip="Move down",
-                    on_click=lambda e, idx=idx: move_row(idx, 1),
-                ),
-            ]
             cells = [
                 ft.DataCell(
                     ft.Column(
                         [
+                            ft.Row(
+                                [
+                                    ft.IconButton(
+                                        icon=ft.Icons.ARROW_DROP_UP,
+                                        icon_size=16,
+                                        tooltip="Move up",
+                                        on_click=lambda e, idx=idx: move_row(idx, -1),
+                                    ),
+                                    ft.IconButton(
+                                        icon=ft.Icons.ARROW_DROP_DOWN,
+                                        icon_size=16,
+                                        tooltip="Move down",
+                                        on_click=lambda e, idx=idx: move_row(idx, 1),
+                                    ),
+                                ],
+                                spacing=0,
+                                tight=True,
+                            ),
                             ft.Row(
                                 [
                                     ft.Checkbox(
@@ -180,6 +217,7 @@ def main(page: ft.Page):
                                         on_change=lambda e, row=row: row.__setitem__(
                                             "selected", e.control.value
                                         ),
+                                        scale=0.8,
                                     ),
                                     ft.IconButton(
                                         icon=ft.Icons.DELETE_OUTLINE,
@@ -189,8 +227,8 @@ def main(page: ft.Page):
                                     ),
                                 ],
                                 spacing=0,
+                                tight=True,
                             ),
-                            ft.Row(controls, spacing=0),
                         ],
                         spacing=0,
                         tight=True,
@@ -223,6 +261,8 @@ def main(page: ft.Page):
         ],
         rows=[],
         heading_row_height=48,
+        data_row_min_height=48,
+        data_row_max_height=float("inf"),
         column_spacing=24,
         horizontal_margin=12,
         horizontal_lines=ft.BorderSide(width=0),
@@ -252,6 +292,11 @@ def main(page: ft.Page):
                     "Clear migrations",
                     icon=ft.Icons.CLEAR_ALL,
                     on_click=clear_selected,
+                ),
+                ft.OutlinedButton(
+                    "Delete checked migrations",
+                    icon=ft.Icons.DELETE,
+                    on_click=delete_checked_migrations,
                 ),
             ]
         ),
