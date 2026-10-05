@@ -95,8 +95,6 @@ def main(page: ft.Page):
     def combine_selected(e=None):
         selected = [i for i, r in enumerate(rows) if r["selected"]]
         if len(selected) < 2:
-            snack.content = ft.Text("Select at least two rows to combine a migration.")
-            page.open(snack)
             return
         migration_counter["n"] += 1
         mid = migration_counter["n"]
@@ -114,25 +112,18 @@ def main(page: ft.Page):
     def clear_selected(e=None):
         for r in rows:
             r["mid"] = None
-            r["del"] = False
         normalize()
         rebuild()
 
-    def set_migration_delete(run, value):
-        a, b = run
-        for k in range(a, b + 1):
-            rows[k]["del"] = value
-        rebuild()
-
-    def delete_checked_migrations(e=None):
-        global_del = any(r.get("del") for r in rows)
-        if not global_del:
-            snack.content = ft.Text("Check a migration's checkbox first.")
-            page.open(snack)
+    def delete_selected_migrations(e=None):
+        selected_mids = {
+            r["mid"] for r in rows if r["selected"] and r["mid"] is not None
+        }
+        if not selected_mids:
             return
-        keep = [r for r in rows if not (r["mid"] is not None and r.get("del"))]
-        rows.clear()
-        rows.extend(keep)
+        for r in rows:
+            if r["mid"] in selected_mids:
+                r["mid"] = None
         normalize()
         rebuild()
 
@@ -161,25 +152,11 @@ def main(page: ft.Page):
         label = f"M{[r for r in runs].index(run) + 1}"
         piece = ("]─╮ " if idx == a else "  │") if idx < b else "]─╯ "
         return ft.Container(
-            ft.Row(
-                [
-                    ft.Checkbox(
-                        value=row.get("del", False),
-                        on_change=lambda e, row=row: (
-                            row.__setitem__("del", e.control.value),
-                            set_migration_delete(run, e.control.value),
-                        ),
-                        scale=0.7,
-                    ),
-                    ft.Text(
-                        f"{piece}",
-                        color=ft.Colors.RED_400,
-                        weight=ft.FontWeight.BOLD,
-                        size=13,
-                    ),
-                ],
-                spacing=0,
-                tight=True,
+            ft.Text(
+                f"{piece}",
+                color=ft.Colors.RED_400,
+                weight=ft.FontWeight.BOLD,
+                size=13,
             ),
             tooltip=f"{label}: " + " → ".join(seq),
         )
@@ -294,9 +271,9 @@ def main(page: ft.Page):
                     on_click=clear_selected,
                 ),
                 ft.OutlinedButton(
-                    "Delete checked migrations",
+                    "Delete selected migration",
                     icon=ft.Icons.DELETE,
-                    on_click=delete_checked_migrations,
+                    on_click=delete_selected_migrations,
                 ),
             ]
         ),
