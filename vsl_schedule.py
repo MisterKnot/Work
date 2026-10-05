@@ -129,16 +129,30 @@ def main(page: ft.Page):
 
     # ---- table ------------------------------------------------------------
 
+    CHAR_W = 8
+    COL_PAD = 14
+
+    def col_width(col, header_w=90):
+        longest = max(
+            (len(r["fields"][col]) for r in rows),
+            default=0,
+        )
+        longest = max(longest, 3)
+        return max(header_w, longest * CHAR_W + COL_PAD)
+
     def make_cell(row, col):
         def on_change(e, row=row, col=col):
             row["fields"][col] = e.control.value
+            sync_widths()
+            table.update()
 
         return ft.TextField(
             value=row["fields"][col],
             on_change=on_change,
             dense=True,
             border=ft.UnderlineInputBorder(),
-            content_padding=ft.Padding(left=6, right=6, top=0, bottom=0),                  
+            content_padding=ft.Padding(left=6, right=6, top=0, bottom=0),
+            width=col_width(col),
         )
 
     def migration_cell(idx):
@@ -160,6 +174,20 @@ def main(page: ft.Page):
             ),
             tooltip=f"{label}: " + " → ".join(seq),
         )
+
+    def sync_widths():
+        for ci, col in enumerate(COLUMNS):
+            w = 30 if col == "Migrations" else col_width(col)
+            header = table.columns[ci + 1].label
+            header.width = w
+            header.max_lines = 2
+        for dr in table.rows:
+            for ci, cell in enumerate(dr.cells):
+                if ci == 0:
+                    continue
+                inner = cell.content
+                if isinstance(inner, ft.TextField):
+                    inner.width = col_width(COLUMNS[ci - 1])
 
     def rebuild():
         table.rows.clear()
@@ -219,6 +247,7 @@ def main(page: ft.Page):
                     cells.append(ft.DataCell(make_cell(row, col)))
             table.rows.append(ft.DataRow(cells=cells))
         count_text.value = f"{len(rows)} rows · {len(runs)} migrations"
+        sync_widths()
         page.update()
 
     table = ft.DataTable(
