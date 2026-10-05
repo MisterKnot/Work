@@ -141,12 +141,10 @@ def main(page: ft.Page):
         a, b = run
         seq = [rows[k]["fields"]["QC"] or "?" for k in range(a, b + 1)]
         label = f"M{[r for r in runs].index(run) + 1}"
-        qc = row["fields"]["QC"] or "?"
-        arrow = "  ↓" if idx < b else ""
-        piece = ("╭─[ " if idx == a else "│  ") if idx < b else "╰─] "
+        piece = ("]─╮ " if idx == a else "  │") if idx < b else "]─╯ "
         return ft.Container(
             ft.Text(
-                f"{piece}{qc}{arrow}",
+                f"{piece}",
                 color=ft.Colors.RED_400,
                 weight=ft.FontWeight.BOLD,
                 size=13,
