@@ -128,14 +128,13 @@ def main(page: ft.Page):
             on_change=on_change,
             dense=True,
             border=ft.UnderlineInputBorder(),
-            content_padding=ft.Padding(left=6, right=6, top=4, bottom=4),
-            width=140 if col in ("Arrival at Piraeus Road", "Working start time", "ETS") else 110,
+            content_padding=ft.Padding(left=6, right=6, top=0, bottom=0),                  
         )
 
     def migration_cell(idx):
         row = rows[idx]
         if row["mid"] is None:
-            return ft.Container(ft.Text("", italic=True, color=ft.Colors.GREY_400), width=120)
+            return ft.Container(ft.Text("", italic=True, color=ft.Colors.GREY_400))
         runs = migration_runs()
         run = next((a, b) for a, b in runs if a <= idx <= b)
         a, b = run
@@ -149,7 +148,6 @@ def main(page: ft.Page):
                 weight=ft.FontWeight.BOLD,
                 size=13,
             ),
-            width=120,
             tooltip=f"{label}: " + " → ".join(seq),
         )
 
