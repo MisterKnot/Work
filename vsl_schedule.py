@@ -129,8 +129,13 @@ def main(page: ft.Page):
 
     # ---- table ------------------------------------------------------------
 
+    FONT_SIZE = 13
+    FONT_FAMILY = "Consolas"
     CHAR_W = 8
     COL_PAD = 14
+
+    def cell_text_style():
+        return ft.TextStyle(font_family=FONT_FAMILY, size=FONT_SIZE)
 
     def col_width(col, header_w=90):
         longest = max(
@@ -152,6 +157,7 @@ def main(page: ft.Page):
             dense=True,
             border=ft.UnderlineInputBorder(),
             content_padding=ft.Padding(left=6, right=6, top=0, bottom=0),
+            text_style=cell_text_style(),
             width=col_width(col),
         )
 
