@@ -208,13 +208,23 @@ def main(page: ft.Page):
 
     table = ft.DataTable(
         columns=[
-            ft.DataColumn(ft.Text("Sel. / Move", size=12)),
-            *[ft.DataColumn(
-                ft.Text("" if c == "Migrations" else c, size=12)
-            ) for c in COLUMNS],
+            ft.DataColumn(ft.Text("Sel. / Move", size=12, width=60, max_lines=2)),
+            *[
+                ft.DataColumn(
+                    ft.Text(
+                        "" if c == "Migrations" else c,
+                        size=12,
+                        width=18 if c == "Migrations" else (90 if c in ("QC", "LOA", "Moves", "Mov. rem", "ETS", "Service", "OWNER") else 110),
+                        max_lines=2,
+                    )
+                )
+                for c in COLUMNS
+            ],
         ],
         rows=[],
         heading_row_height=48,
+        column_spacing=24,
+        horizontal_margin=12,
         horizontal_lines=ft.BorderSide(width=0),
         vertical_lines=ft.BorderSide(width=0),
     )
