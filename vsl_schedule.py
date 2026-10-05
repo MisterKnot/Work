@@ -42,7 +42,7 @@ def main(page: ft.Page):
             on_change=on_change,
             dense=True,
             border=ft.InputBorder.UNDERLINE,
-            content_padding=ft.padding.symmetric(horizontal=6, vertical=4),
+            content_padding=ft.Padding(left=6, right=6, top=4, bottom=4),
             width=140 if col in ("Arrival at Piraeus Road", "Working start time", "ETS") else 110,
         )
 
